@@ -17,7 +17,7 @@ from distutils.command.install import install
 from distutils.command.install_lib import install_lib
 from distutils.spawn import find_executable
 
-cross_compiling = "_PYTHON_HOST_PLATFORM" in os.environ
+cross_compiling = "_PYTHON_HOST_PLATFORM" in os.environ or os.environ.get('CROSS_COMPILE_TARGET') == 'yes'
 
 def get_platform():
     # cross build
@@ -175,7 +175,6 @@ class PyBuildExt(build_ext):
     def __init__(self, dist):
         build_ext.__init__(self, dist)
         self.failed = []
-        self.cross_compile = os.environ.get('CROSS_COMPILE_TARGET') == 'yes'
 
     def build_extensions(self):
 
