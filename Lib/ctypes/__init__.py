@@ -285,29 +285,6 @@ else:
     else:
         set_conversion_mode("ascii", "strict")
 
-    class c_wchar_p(_SimpleCData):
-        _type_ = "Z"
-
-    class c_wchar(_SimpleCData):
-        _type_ = "u"
-
-    def create_unicode_buffer(init, size=None):
-        """create_unicode_buffer(aString) -> character array
-        create_unicode_buffer(anInteger) -> character array
-        create_unicode_buffer(aString, anInteger) -> character array
-        """
-        if isinstance(init, (str, unicode)):
-            if size is None:
-                size = len(init)+1
-            buftype = c_wchar * size
-            buf = buftype()
-            buf.value = init
-            return buf
-        elif isinstance(init, (int, long)):
-            buftype = c_wchar * init
-            buf = buftype()
-            return buf
-        raise TypeError(init)
 
 # XXX Deprecated
 def SetPointerType(pointer, cls):

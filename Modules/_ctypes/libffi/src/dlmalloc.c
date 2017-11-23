@@ -630,18 +630,6 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 /* HP-UX's stdlib.h redefines mallinfo unless _STRUCT_MALLINFO is defined */
 #define _STRUCT_MALLINFO
 
-struct mallinfo {
-  MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
-  MALLINFO_FIELD_TYPE ordblks;  /* number of free chunks */
-  MALLINFO_FIELD_TYPE smblks;   /* always 0 */
-  MALLINFO_FIELD_TYPE hblks;    /* always 0 */
-  MALLINFO_FIELD_TYPE hblkhd;   /* space in mmapped regions */
-  MALLINFO_FIELD_TYPE usmblks;  /* maximum total allocated space */
-  MALLINFO_FIELD_TYPE fsmblks;  /* always 0 */
-  MALLINFO_FIELD_TYPE uordblks; /* total allocated space */
-  MALLINFO_FIELD_TYPE fordblks; /* total free space */
-  MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
-};
 
 #endif /* HAVE_USR_INCLUDE_MALLOC_H */
 #endif /* NO_MALLINFO */
@@ -982,7 +970,7 @@ int  dlmalloc_trim(size_t);
   p = malloc(n);
   assert(malloc_usable_size(p) >= 256);
 */
-size_t dlmalloc_usable_size(void*);
+size_t dlmalloc_usable_size(const void*);
 
 /*
   malloc_stats();
@@ -4451,7 +4439,7 @@ void dlmalloc_stats() {
   internal_malloc_stats(gm);
 }
 
-size_t dlmalloc_usable_size(void* mem) {
+size_t dlmalloc_usable_size(const void* mem) {
   if (mem != 0) {
     mchunkptr p = mem2chunk(mem);
     if (cinuse(p))

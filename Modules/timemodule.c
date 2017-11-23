@@ -27,6 +27,7 @@
 #include <io.h>
 #endif
 
+#undef HAVE_FTIME
 #ifdef HAVE_FTIME
 #include <sys/timeb.h>
 #if !defined(MS_WINDOWS) && !defined(PYOS_OS2)

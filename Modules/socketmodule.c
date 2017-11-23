@@ -156,6 +156,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
    On the other hand, not all Linux versions agree, so there the settings
    computed by the configure script are needed! */
 
+/* Android hack, same reason are what is described above */
+#undef HAVE_GETHOSTBYNAME_R
+
 #ifndef linux
 # undef HAVE_GETHOSTBYNAME_R_3_ARG
 # undef HAVE_GETHOSTBYNAME_R_5_ARG

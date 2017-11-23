@@ -33,7 +33,7 @@ host_platform = get_platform()
 COMPILED_WITH_PYDEBUG = ('--with-pydebug' in sysconfig.get_config_var("CONFIG_ARGS"))
 
 # This global variable is used to hold the list of modules to be disabled.
-disabled_module_list = []
+disabled_module_list = ['spwd','bz2','ossaudiodev','_curses','_curses_panel','readline','_locale','_bsddb','gdbm','dbm','nis','linuxaudiodev','crypt','_multiprocessing']
 
 def add_dir_to_list(dirlist, dir):
     """Add the directory 'dir' to the list 'dirlist' (at the front) if
@@ -175,6 +175,7 @@ class PyBuildExt(build_ext):
     def __init__(self, dist):
         build_ext.__init__(self, dist)
         self.failed = []
+        self.cross_compile = os.environ.get('CROSS_COMPILE_TARGET') == 'yes'
 
     def build_extensions(self):
 
@@ -309,6 +310,12 @@ class PyBuildExt(build_ext):
             self.announce('WARNING: building of extension "%s" failed: %s' %
                           (ext.name, sys.exc_info()[1]))
             self.failed.append(ext.name)
+            return
+        # Import check will not work when cross-compiling.
+        if os.environ.has_key('PYTHONXCPREFIX'):
+            self.announce(
+                'WARNING: skipping import check for cross-compiled: "%s"' %
+                ext.name)
             return
         # Workaround for Mac OS X: The Carbon-based modules cannot be
         # reliably imported into a command-line Python
@@ -527,6 +534,13 @@ class PyBuildExt(build_ext):
                 '/lib', '/usr/lib',
                 ):
                 add_dir_to_list(lib_dirs, d)
+        else:
+            cflags = os.environ.get('CFLAGS')
+            if cflags:
+                inc_dirs = [x[2:] for x in cflags.split() if x.startswith('-I')]
+            ldflags = os.environ.get('LDFLAGS')
+            if ldflags:
+                lib_dirs = [x[2:] for x in ldflags.split() if x.startswith('-L')]
         exts = []
         missing = []
 
@@ -2051,8 +2065,15 @@ class PyBuildExt(build_ext):
 
                 # Pass empty CFLAGS because we'll just append the resulting
                 # CFLAGS to Python's; -g or -O2 is to be avoided.
-                cmd = "cd %s && env CFLAGS='' '%s/configure' %s" \
-                      % (ffi_builddir, ffi_srcdir, " ".join(config_args))
+                if cross_compiling:
+                    cmd = "cd %s && env CFLAGS='' %s/configure --host=%s --build=%s %s" \
+                          % (ffi_builddir, ffi_srcdir,
+                             os.environ.get('HOSTARCH'),
+                             os.environ.get('BUILDARCH'),
+                             " ".join(config_args))
+                else:
+                    cmd = "cd %s && env CFLAGS='' '%s/configure' %s" \
+                          % (ffi_builddir, ffi_srcdir, " ".join(config_args))
 
                 res = os.system(cmd)
                 if res or not os.path.exists(ffi_configfile):
