@@ -76,20 +76,6 @@ dl_funcptr _PyImport_GetDynLoadFunc(const char *fqname, const char *shortname,
     char pathbuf[260];
     int dlopenflags=0;
 
-    static void *libpymodules = -1;
-    void *rv = NULL;
-
-    /* Ensure we have access to libpymodules. */
-    if (libpymodules == -1) {
-        printf("ANDROID_UNPACK = %s\n", getenv("ANDROID_UNPACK"));
-        PyOS_snprintf(pathbuf, sizeof(pathbuf), "%s/libpymodules.so", getenv("ANDROID_UNPACK"));
-        libpymodules = dlopen(pathbuf, RTLD_NOW);
-
-        if (libpymodules == NULL) {
-            //abort();
-        }
-    }
-        
 
     if (strchr(pathname, '/') == NULL) {
         /* Prefix bare filename with "./" */
@@ -100,15 +86,6 @@ dl_funcptr _PyImport_GetDynLoadFunc(const char *fqname, const char *shortname,
     PyOS_snprintf(funcname, sizeof(funcname),
                   LEAD_UNDERSCORE "init%.200s", shortname);
 
-
-    /* Read symbols that have been linked into the main binary. */
-
-    if (libpymodules) {
-        rv = dlsym(libpymodules, funcname);
-        if (rv != NULL) {
-            return rv;
-        }
-    }
 
 
     if (fp != NULL) {
