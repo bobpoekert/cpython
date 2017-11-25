@@ -2,6 +2,9 @@ dnl ***********************************************
 dnl * Please run autoreconf to test your changes! *
 dnl ***********************************************
 
+ac_cv_file__dev_ptmx=no
+ac_cv_file__dev_ptc=no
+
 # Set VERSION so we only need to edit in one place (i.e., here)
 m4_define(PYTHON_VERSION, 2.7)
 

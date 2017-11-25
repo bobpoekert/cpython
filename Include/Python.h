@@ -6,7 +6,6 @@
 
 #include "patchlevel.h"
 #include "pyconfig.h"
-#include "pymacconfig.h"
 
 /* Cyclic gc is always enabled, starting with release 2.3a1.  Supply the
  * old symbol for the benefit of extension modules written before then
