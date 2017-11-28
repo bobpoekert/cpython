@@ -19,6 +19,8 @@ from distutils.spawn import find_executable
 
 cross_compiling = "_PYTHON_HOST_PLATFORM" in os.environ or os.environ.get('CROSS_COMPILE_TARGET') == 'yes'
 
+ssl_dir = os.path.abspath('./openssl/openssl/openssl-1.0.2h')
+
 def get_platform():
     # cross build
     if "_PYTHON_HOST_PLATFORM" in os.environ:
@@ -816,15 +818,13 @@ class PyBuildExt(build_ext):
         # CSV files
         exts.append( Extension('_csv', ['_csv.c']) )
 
+
         # socket(2)
         exts.append( Extension('_socket', ['socketmodule.c', 'timemodule.c'],
                                depends=['socketmodule.h'],
                                libraries=math_libs) )
         # Detect SSL support for the socket module (via _ssl)
-        search_for_ssl_incs_in = [
-                              '/usr/local/ssl/include',
-                              '/usr/contrib/ssl/include/'
-                             ]
+        search_for_ssl_incs_in = [ssl_dir]
         ssl_incs = find_file('openssl/ssl.h', inc_dirs,
                              search_for_ssl_incs_in
                              )
@@ -833,20 +833,16 @@ class PyBuildExt(build_ext):
                                ['/usr/kerberos/include'])
             if krb5_h:
                 ssl_incs += krb5_h
-        ssl_libs = find_library_file(self.compiler, 'ssl',lib_dirs,
-                                     ['/usr/local/ssl/lib',
-                                      '/usr/contrib/ssl/lib/'
-                                     ] )
 
-        if (ssl_incs is not None and
-            ssl_libs is not None):
-            exts.append( Extension('_ssl', ['_ssl.c'],
-                                   include_dirs = ssl_incs,
-                                   library_dirs = ssl_libs,
-                                   libraries = ['ssl', 'crypto'],
-                                   depends = ['socketmodule.h']), )
-        else:
-            missing.append('_ssl')
+
+        exts.append( Extension('_ssl', ['_ssl.c'],
+                               include_dirs = ssl_incs,
+                               library_dirs = [],
+                               libraries = [],
+                               extra_link_args = [
+                                   os.path.join(ssl_dir, 'libssl.a'),
+                                   os.path.join(ssl_dir, 'libcrypto.a'), '-ldl'],
+                               depends = ['socketmodule.h']))
 
         # find out which version of OpenSSL we have
         openssl_ver = 0
@@ -871,9 +867,8 @@ class PyBuildExt(build_ext):
                 pass
 
         min_openssl_ver = 0x00907000
-        have_any_openssl = ssl_incs is not None and ssl_libs is not None
-        have_usable_openssl = (have_any_openssl and
-                               openssl_ver >= min_openssl_ver)
+        have_any_openssl = True
+        have_usable_openssl = True
 
         if have_any_openssl:
             if have_usable_openssl:
@@ -881,8 +876,10 @@ class PyBuildExt(build_ext):
                 # of hash functions from the OpenSSL library.
                 exts.append( Extension('_hashlib', ['_hashopenssl.c'],
                                        include_dirs = ssl_incs,
-                                       library_dirs = ssl_libs,
-                                       libraries = ['ssl', 'crypto']) )
+                                       libraries = [],
+                                       extra_link_args=[
+                                           os.path.join(ssl_dir, 'libssl.a'),
+                                           os.path.join(ssl_dir, 'libcrypto.a'), '-ldl']) )
             else:
                 print ("warning: openssl 0x%08x is too old for _hashlib" %
                        openssl_ver)

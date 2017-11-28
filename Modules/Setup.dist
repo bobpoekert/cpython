@@ -215,10 +215,10 @@ GLHACK=-Dclear=__GLclear
 
 # Socket module helper for SSL support; you must comment out the other
 # socket line above, and possibly edit the SSL variable:
-SSL=/p4a/path/to/openssl
+SSL=./openssl/openssl-1.0.2h
 _ssl _ssl.c \
-	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
-	-L$(SSL) -lssl -lcrypto
+	-I$(SSL)/include -I$(SSL)/include/openssl \
+	openssl/openssl-1.0.2h/libssl.a openssl/openssl-1.0.2h/libcrypto.a -ldl
 
 # The crypt module is now disabled by default because it breaks builds
 # on many systems (where -lcrypt is needed), e.g. Linux (I believe).

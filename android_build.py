@@ -9,12 +9,10 @@ host_arch = check_output(['gcc', '-dumpmachine']).strip()
 call(['mkdir', '-p', 'build/'])
 
 archs = [
-        ('arm',  'arm-linux-androideabi', 'arm-linux-androideabi'),
-        ('arm64',  'aarch64-linux-android', 'aarch64-linux-android'),
-        ('mips',  'mipsel-linux-android', 'mipsel-linux-android'),
-        ('mips64',  'mips64-linux-android',  'mips64-linux-android'),
-        ('x86',  'x86', 'i686-linux-android'),
-        ('x86_64', 'x86_64', 'x86_64-linux-android')]
+        ('arm',  'arm-linux-androideabi', 'arm-linux-androideabi', 'armeabi-v7a'),
+        ('arm64',  'aarch64-linux-android', 'aarch64-linux-android', 'armeabi'),
+        ('mips',  'mipsel-linux-android', 'mipsel-linux-android', 'mips'),
+        ('x86',  'x86', 'i686-linux-android', 'x86')]
 
 def ssl_select_build_arch(aname):
     if 'arm64' in aname:
@@ -38,19 +36,15 @@ def build_openssl(env, arch_name, gnu_arch_name, gcc_name, lib_dir):
     del env['CROSS_COMPILE']
     sh = lambda args: call(args, env=env, cwd=openssl_dir)
     ssl_arch = ssl_select_build_arch(arch_name)
-    sh(['perl', 'Configure', 'shared', 'no-dso', 'no-krb5', ssl_arch])
+    sh(['perl', 'Configure', 'no-shared', 'no-dso', 'no-krb5', ssl_arch])
     sh(['make', 'clean'])
-    sh(['make', '-j5', 'build_libs'])
-    sh(['ln', '-s', './libcrypto1.0.2h.so', './libcrypto.so.1.0.0'])
-    sh(['ln', '-s', './libssl1.0.2h.so', './libssl.so.1.0.0'])
-    sh(['make', '-j5', 'build_libs'])
-    call(['cp', '%s/libssl.so' % openssl_dir, lib_dir])
-    call(['cp', '%s/libcrypto.so' % openssl_dir, lib_dir])
+    sh(['make', '-j5', 'depend'])
+    sh(['make', '-j5'])
+    sh(['make', 'install'])
 
-def build(arch_name, gnu_arch_name, gcc_name):
+def build(arch_name, gnu_arch_name, gcc_name, android_name):
     build_dir = os.path.abspath('./build/%s' % arch_name)
-    if os.path.exists('%s/lib/libpython2.7.so' % build_dir):
-        return
+    call(['mkdir', '-p', './target/%s' % android_name])
     env = dict(**os.environ)
     env['CROSS_COMPILE'] = '%s-4.9' % gnu_arch_name
     env['CC'] = '%s-gcc' % gcc_name
@@ -64,7 +58,6 @@ def build(arch_name, gnu_arch_name, gcc_name):
     env['ac_cv_header_langinfo_h'] = 'no'
     env['CONFIG_SITE'] = './config.site'
     call(['mkdir', '-p', build_dir])
-    call(['rm', 'Makefile'])
     call(['rm', '-r', 'libs/'])
     call(['mkdir', 'libs'])
     build_openssl(env, arch_name, gnu_arch_name, gcc_name, build_dir)
@@ -77,13 +70,14 @@ def build(arch_name, gnu_arch_name, gcc_name):
         '--enable-shared', '--enable-optimizations',
         '--disable-ipv6',
         '--disable-toolbox-glue',
-        '-disable-framework'], env=env)
+        '--disable-framework'], env=env)
     call(['make', '-j5', 'install',
-        'HOSTPYTHON=./hostpython',
-        'HOSTPGEN=./hostpython',
+        'HOSTPYTHON=python',
         'INSTSONAME=libpython2.7.so',
         'CROSS_COMPILE_TARGET=yes'], env=env)
+    call(['cp', '%s/lib/libpython2.7.so' % build_dir, './target/%s' % android_name])
+    #call(['make', 'distclean'])
 
 if __name__ == '__main__':
-    for arch_name, gnu_arch_name, gcc_name in archs:
-        build(arch_name, gnu_arch_name, gcc_name)
+    for arch_name, gnu_arch_name, gcc_name, android_name in archs:
+        build(arch_name, gnu_arch_name, gcc_name, android_name)
